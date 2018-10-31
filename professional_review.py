@@ -21,8 +21,8 @@ BASE_URL = "http://professional-review.com/"
 COUNTRY_LIST=[]
 HEADER_LIST = ["Country", "Title", "Update Logo", "Update Header", "Update Link", "Update Date", "Update Content"]
 data = OrderedDict()
-__program__ = ""
-__version__ = "0.0.1"
+FILE_NAME = os.path.join(os.getcwd(),"report/profession-review_{}.xlsx".format(int(time.time())))
+
 def get_country():
 	logger.info("#----start to find all country----") 
 	req = requests.get(BASE_URL)
@@ -59,7 +59,28 @@ def get_details():
 		logger.error("#----country {0} find details failed link {1}.----".format(country['name'], country['link']))
 
 
+def format_file():
+	from openpyxl import load_workbook
+	from openpyxl.styles import Font, Alignment
+	wb = load_workbook(filename=FILE_NAME)
+	black_font = Font(size=11, bold=True, color='FF000000')
+	count = 1
+	width = 15
+	for ws in wb.worksheets:
+		ws.row_dimensions[0].height = 30
+		for column in ["A", "B", "C", "D", "E", "F", "G"]:
+			ws.column_dimensions[column].width = width
+			width+=10
+
+		for cell in ws["1:1"]:
+			cell.font = black_font
+			cell.alignment = Alignment(horizontal='center', vertical='center',wrap_text=True)
+			count +=1
+
+	wb.save(filename=FILE_NAME)
+
 if __name__ == "__main__":
 	get_details()
-	save_data("profession-review_{}.xlsx".format(int(time.time()), data)
+	save_data(FILE_NAME, data)
+	format_file()
 	logger.info("#-------done--------")
