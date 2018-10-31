@@ -1,5 +1,7 @@
 """
 pip install pyexcel-xlsx
+pyexcel-io==0.5.9.1
+pyexcel-xlsx==0.5.6
 python professional-review.py
 """
 import re
