@@ -47,14 +47,26 @@ def get_details():
 			UPDATE_DATA = [HEADER_LIST]
 			response = req.content;
 			soup = BeautifulSoup(response, 'html.parser');
-			title = soup.select("h1.display-4")[0].text
-			latest_updates = soup.find_all("div", class_="card flex-md-row mb-4 box-shadow h-md-200")
-			for update in latest_updates:
+			
+			updates = soup.find_all("div", class_="card flex-md-row mb-4 box-shadow h-md-200")
+			for update in updates:
 				logo = update.find('img')['src']
 				header = update.find('strong').find('a').text
-				header_link = update.find('strong').find("a")['href']
+				header_link = BASE_URL+update.find('strong').find("a")['href']
 				update_date = update.find('div', class_='text-muted').text.split(" ")[-1]
 				message = update.find('p', class_='card-text').text
+				# get update data 
+				update_req = requests.get(header_link)
+				if update_req.status_code == 200:
+					update_response = update_req.content;
+					update_soup = BeautifulSoup(update_response, 'html.parser');
+					latest_updates = soup.find_all("div", class_="card flex-md-row mb-4 box-shadow h-md-200")
+					for update_data in latest_updates:
+						title = soup.select("h1.display-4")[0].text
+						title_desc = soup.find("p", class_="lead my-3").text
+						header_links = soup.find_all("a")
+					
+
 				UPDATE_DATA.append([country['name'], title, logo, header, header_link, update_date, message ])
 			data.update({"Sheet {}".format(country['name']): UPDATE_DATA})
 	else:
