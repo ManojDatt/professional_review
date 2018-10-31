@@ -23,7 +23,7 @@ BASE_URL = "http://professional-review.com/"
 COUNTRY_LIST=[]
 HEADER_LIST = ["Country", "Title", "Update Logo", "Update Header", "Update Link", "Update Date", "Update Content"]
 data = OrderedDict()
-FILE_NAME = os.path.join(os.getcwd(),"report/profession-review_{}.xlsx".format(int(time.time())))
+FILE_NAME = os.path.join(os.getcwd(),"report/professional-review_{}.xlsx".format(int(time.time())))
 
 def get_country():
 	logger.info("#----start to find all country----") 
@@ -67,8 +67,9 @@ def format_file():
 	wb = load_workbook(filename=FILE_NAME)
 	black_font = Font(size=11, bold=True, color='FF000000')
 	count = 1
-	width = 15
+	
 	for ws in wb.worksheets:
+		width = 15
 		ws.row_dimensions[0].height = 30
 		for column in ["A", "B", "C", "D", "E", "F", "G"]:
 			ws.column_dimensions[column].width = width
