@@ -29,7 +29,7 @@ from collections import OrderedDict
 logging.basicConfig(filename="job-logs.log",
                     format='%(asctime)s %(levelname)s %(message)s',
                     filemode='w',
-                    level=logging.INFO)
+                    level=logging.ERROR)
 logger=logging.getLogger()
 
 BASE_URL = "http://professional-review.com/"
@@ -112,13 +112,13 @@ def get_details():
 				UPDATE_DATA.append([country['country'],country['state']
 				, store_name, address, web_url,
 				tel_phone, email, about, description])
-			try:
-				FILE_NAME = os.path.join(os.getcwd(),"report/professional-review-{}.xlsx".format(country['state']))
+			# try:
+			FILE_NAME = os.path.join(os.getcwd(),"report/professional-review-{}.xlsx".format(country['state']))
 
-				save_data(FILE_NAME, {"Sheet {}".format(country['state']): UPDATE_DATA})
-				format_file(FILE_NAME)
-			except Exception as ex:
-				logger.error("#---save error---{}".format(ex))
+			save_data(FILE_NAME, {"Sheet {}".format(country['state']): UPDATE_DATA})
+			format_file(FILE_NAME)
+			# except Exception as ex:
+			# 	logger.error("#---save error---{}".format(ex))
 		else:
 			logger.error("#----country {0} find details failed link {1}.----".format(country['country'], country['link']))
 
