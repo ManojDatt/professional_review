@@ -37,7 +37,7 @@ COUNTRY_LIST=[]
 HEADER_LIST = ["Country", "State", "Store Name", "Address", "Website URL",
 "Tel Phone", "Email", "About", "Description"]
 data = OrderedDict()
-FILE_NAME = os.path.join(os.getcwd(),"report/professional-review_{}.xlsx")
+
 
 display = Display(visible=0, size=(1024, 768))
 display.start()
@@ -113,18 +113,20 @@ def get_details():
 				, store_name, address, web_url,
 				tel_phone, email, about, description])
 			try:
-				save_data(FILE_NAME.format(country['state']), {"Sheet {}".format(country['state']): UPDATE_DATA})
-				format_file(FILE_NAME.format(country['state']))
+				FILE_NAME = os.path.join(os.getcwd(),"report/professional-review-{}.xlsx".format(country['state']))
+
+				save_data(FILE_NAME, {"Sheet {}".format(country['state']): UPDATE_DATA})
+				format_file(FILE_NAME)
 			except Exception as ex:
 				logger.error("#---save error---{}".format(ex))
 		else:
 			logger.error("#----country {0} find details failed link {1}.----".format(country['country'], country['link']))
 
 
-def format_file(filename):
+def format_file(FileName):
 	from openpyxl import load_workbook
 	from openpyxl.styles import Font, Alignment
-	wb = load_workbook(filename=filename)
+	wb = load_workbook(filename=FileName)
 	black_font = Font(size=11, bold=True, color='FF000000')
 	count = 1
 	
@@ -140,7 +142,7 @@ def format_file(filename):
 			cell.alignment = Alignment(horizontal='center', vertical='center',wrap_text=True)
 			count +=1
 
-	wb.save(filename=FILE_NAME)
+	wb.save(filename=FileName)
 
 if __name__ == "__main__":
 	get_details()
