@@ -3,12 +3,25 @@ pip install pyexcel-xlsx
 pyexcel-io==0.5.9.1
 pyexcel-xlsx==0.5.6
 python professional-review.py
+Packages need to install to run webdriver
+sudo apt-get install python3-pip
+pip3 install selenium
+sudo apt-get install firefox
+sudo apt-get install xvfb
+sudo pip install pyvirtualdisplay
+TO ENTER AND COME BACK FROM screen on server
+1) To resume screen $ screen -r or for new $ screen
+2) To come back CTR+A then press d
+
 """
 import re
 import os
 import time
 import requests
 from bs4 import BeautifulSoup
+from pyvirtualdisplay import Display
+from selenium import webdriver
+import unicodedata
 import json
 import logging
 from pyexcel_xlsx import save_data
@@ -26,6 +39,13 @@ HEADER_LIST = ["Country", "State", "Store Name", "Address", "Website URL",
 data = OrderedDict()
 FILE_NAME = os.path.join(os.getcwd(),"report/professional-review_{}.xlsx".format(int(time.time())))
 
+display = Display(visible=0, size=(1024, 768))
+display.start()
+capabilities = webdriver.DesiredCapabilities().FIREFOX
+capabilities["marionette"] = True
+capabilities["binary"] = '/usr/bin/firefox'
+browser = webdriver.Firefox(capabilities= capabilities)
+
 def get_country():
 	logger.info("#----start to find all country----") 
 	req = requests.get(BASE_URL)
@@ -35,7 +55,6 @@ def get_country():
 		links = soup.find_all("a", class_="p-2 text-muted")
 		for link in links:
 			COUNTRY_LIST.append({"country":link['href'].split("/")[0].title(), "state": link.text,"link":BASE_URL+link['href']})
-		print(COUNTRY_LIST)
 		logger.info("#----country find success----")
 	else:
 		logger.error("#----country find request failed.----")
@@ -51,35 +70,57 @@ def get_details():
 			
 			updates = soup.find_all("div", class_="card flex-md-row mb-4 box-shadow h-md-200")
 			for update in updates:
-				print(country)
 				header_link = BASE_URL+update.find('strong').find("a")['href']
-				print("update request failed {}".format(header_link))
-				update_req = requests.get(header_link)
-				if update_req.status_code == 200:
-					try:
-						update_response = update_req.text;
-						update_soup = BeautifulSoup(update_response, 'html.parser');
-						header_sec = update_soup.find("div", class_="jumbotron")
-						store_name = header_sec.find("h1", class_="display-4").text.decode('utf-8','ignore').strip()
-						address = header_sec.find("p", class_="lead my-3").text.decode('utf-8','ignore').strip()
-						web_url = header_sec.find_all("a")[0]['href'].decode('utf-8','ignore').strip()
-						tel_phone = header_sec.find_all("a")[1]['href'].decode('utf-8','ignore').strip()
-						email = update_soup.find_all("li", class_="text-info")[0].text
-						about_desc = update_soup.find_all("p", class_="mb-0")
-						about = about_desc[0].text.replace('\n', ' ')
-						description =  ""
-						if about_desc[1]:
-							description = about_desc[1].text.decode('utf-8','ignore').strip().replace('\n', ' ')
+				browser.get(header_link)
+				time.sleep(5)
+				update_response = browser.page_source
+				update_soup = BeautifulSoup(update_response, 'html.parser');
+				header_sec = update_soup.find("div", class_="jumbotron")
+				print(header_link)
 
-						UPDATE_DATA.append([country['country'],country['state']
-						, store_name, address, web_url, tel_phone, email, about, description ])
-					except:
-						pass
-				else:
-					print("update request failed {}".format(header_link))
+				store_name = header_sec.find("h1", class_="display-4").text.strip()
+				store_name = unicodedata.normalize('NFKD', store_name).encode('ascii','ignore')
+				address = header_sec.find("p", class_="lead my-3").text.strip()
+				address = unicodedata.normalize('NFKD', address).encode('ascii','ignore')
+				other_tele = header_sec.find_all("a")
+				web_url = ".."
+				tel_phone = ".."
+				email = ".."
+				for i in range(len(other_tele)):
+					if other_tele[i]['href'].startswith('http'):
+						web_url = other_tele[i]['href'].strip()
+						web_url = unicodedata.normalize('NFKD', web_url).encode('ascii','ignore')
+
+					if  other_tele[i]['href'].startswith('tel:'):
+						tel_phone = other_tele[i]['href'].split(":")[1].strip()
+						tel_phone = unicodedata.normalize('NFKD', tel_phone).encode('ascii','ignore')
+
+					if "@" in other_tele[i]['href']:
+						email = other_tele[i].text.strip()
+						email = unicodedata.normalize('NFKD', email).encode('ascii','ignore')
+
+				about = ".."
+				description = ".." 
+				about_desc = update_soup.select("div.p-3.mb-3.bg-light.rounded")
+				for i in range(len(about_desc)):
+					if about_desc[i].find("h4").text.strip() == 'Description':
+						description = about_desc[i].find("p").text.strip().replace('\n', ' ')
+						description = unicodedata.normalize('NFKD', description).encode('ascii','ignore')
+
+					if about_desc[i].find("h4").text.strip() == 'About':
+						about = about_desc[i].find("p").text.strip().replace('\n', ' ')
+						about = unicodedata.normalize('NFKD', about).encode('ascii','ignore')
+				print([country['country'],country['state']
+				, store_name, address, web_url,
+				tel_phone, email, about, description])
+				UPDATE_DATA.append([country['country'],country['state']
+				, store_name, address, web_url,
+				tel_phone, email, about, description])
+				
+
 			data.update({"Sheet {}".format(country['country']): UPDATE_DATA})
-	else:
-		logger.error("#----country {0} find details failed link {1}.----".format(country['country'], country['link']))
+		else:
+			logger.error("#----country {0} find details failed link {1}.----".format(country['country'], country['link']))
 
 
 def format_file():
@@ -105,6 +146,10 @@ def format_file():
 
 if __name__ == "__main__":
 	get_details()
+	import pdb
+	pdb.set_trace()
 	save_data(FILE_NAME, data)
 	format_file()
 	logger.info("#-------done--------")
+	display.stop()
+	browser.quit()
