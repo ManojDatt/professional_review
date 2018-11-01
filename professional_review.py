@@ -29,7 +29,7 @@ from collections import OrderedDict
 logging.basicConfig(filename="job-logs.log",
                     format='%(asctime)s %(levelname)s %(message)s',
                     filemode='w',
-                    level=logging.DEBUG)
+                    level=logging.INFO)
 logger=logging.getLogger()
 
 BASE_URL = "http://professional-review.com/"
@@ -37,7 +37,7 @@ COUNTRY_LIST=[]
 HEADER_LIST = ["Country", "State", "Store Name", "Address", "Website URL",
 "Tel Phone", "Email", "About", "Description"]
 data = OrderedDict()
-FILE_NAME = os.path.join(os.getcwd(),"report/professional-review_{}.xlsx".format(int(time.time())))
+FILE_NAME = os.path.join(os.getcwd(),"report/professional-review_{}.xlsx")
 
 display = Display(visible=0, size=(1024, 768))
 display.start()
@@ -54,7 +54,7 @@ def get_country():
 		soup = BeautifulSoup(response, 'html.parser');
 		links = soup.find_all("a", class_="p-2 text-muted")
 		for link in links:
-			COUNTRY_LIST.append({"country":link['href'].split("/")[0].title(), "state": link.text,"link":BASE_URL+link['href']})
+			COUNTRY_LIST.append({"country":str(link['href'].split("/")[0].title()), "state": str(link.text),"link":BASE_URL+link['href']})
 		logger.info("#----country find success----")
 	else:
 		logger.error("#----country find request failed.----")
@@ -76,8 +76,6 @@ def get_details():
 				update_response = browser.page_source
 				update_soup = BeautifulSoup(update_response, 'html.parser');
 				header_sec = update_soup.find("div", class_="jumbotron")
-				print(header_link)
-
 				store_name = header_sec.find("h1", class_="display-4").text.strip()
 				store_name = unicodedata.normalize('NFKD', store_name).encode('ascii','ignore')
 				address = header_sec.find("p", class_="lead my-3").text.strip()
@@ -110,23 +108,23 @@ def get_details():
 					if about_desc[i].find("h4").text.strip() == 'About':
 						about = about_desc[i].find("p").text.strip().replace('\n', ' ')
 						about = unicodedata.normalize('NFKD', about).encode('ascii','ignore')
-				print([country['country'],country['state']
-				, store_name, address, web_url,
-				tel_phone, email, about, description])
+				
 				UPDATE_DATA.append([country['country'],country['state']
 				, store_name, address, web_url,
 				tel_phone, email, about, description])
-				
-
-			data.update({"Sheet {}".format(country['country']): UPDATE_DATA})
+			try:
+				save_data(FILE_NAME.format(country['state']), {"Sheet {}".format(country['state']): UPDATE_DATA})
+				format_file(FILE_NAME.format(country['state']))
+			except Exception as ex:
+				logger.error("#---save error---{}".format(ex))
 		else:
 			logger.error("#----country {0} find details failed link {1}.----".format(country['country'], country['link']))
 
 
-def format_file():
+def format_file(filename):
 	from openpyxl import load_workbook
 	from openpyxl.styles import Font, Alignment
-	wb = load_workbook(filename=FILE_NAME)
+	wb = load_workbook(filename=filename)
 	black_font = Font(size=11, bold=True, color='FF000000')
 	count = 1
 	
@@ -146,10 +144,6 @@ def format_file():
 
 if __name__ == "__main__":
 	get_details()
-	import pdb
-	pdb.set_trace()
-	save_data(FILE_NAME, data)
-	format_file()
 	logger.info("#-------done--------")
 	display.stop()
 	browser.quit()
